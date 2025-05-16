@@ -21,7 +21,7 @@ def index():
 
         output_id = str(uuid.uuid4())
         extension = 'mp3' if format_type == 'mp3' else 'mp4'
-        filename = f"{output_id}.{extension}"
+        filename = f"/tmp/{output_id}.{extension}"
 
         ydl_opts = {
             'outtmpl': filename,
