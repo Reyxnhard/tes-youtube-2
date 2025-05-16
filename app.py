@@ -11,44 +11,31 @@ def index():
     if request.method == 'POST':
         url = request.form.get('url')
         format_type = request.form.get('format')
-        quality = request.form.get('quality_mp3') if format_type == 'mp3' else request.form.get('quality_mp4')
+        quality = request.form.get('quality_mp4')
 
         if not url or not format_type:
             return "URL atau format belum dipilih."
+
+        if format_type != 'mp4':
+            return "Hanya format MP4 yang didukung saat ini."
 
         if not quality:
             return "Kualitas belum dipilih."
 
         output_id = str(uuid.uuid4())
-        extension = 'mp3' if format_type == 'mp3' else 'mp4'
-        filename = f"/tmp/{output_id}.{extension}"
-
-        ydl_opts = {
-            'outtmpl': filename,
-            'quiet': True,
-            'noplaylist': True,
-            'merge_output_format': 'mp4' if format_type == 'mp4' else None,
-        }
-
-        if format_type == 'mp3':
-            ydl_opts.update({
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': quality
-                }]
-            })
-        else:
-            try:
-                height = int(quality)
-                ydl_opts.update({
-                    'format': f"bestvideo[ext=mp4][height<={height}]+bestaudio[ext=m4a]/best[height<={height}]"
-                })
-            except ValueError:
-                return "Kualitas video tidak valid."
+        extension = 'mp4'
+        filename = f"/tmp/{output_id}.{extension}"  # <--- PENTING: gunakan /tmp di Vercel
 
         try:
+            height = int(quality)
+            ydl_opts = {
+                'format': f"bestvideo[ext=mp4][height<={height}]+bestaudio[ext=m4a]/best[height<={height}]",
+                'outtmpl': filename,
+                'quiet': True,
+                'noplaylist': True,
+                'merge_output_format': 'mp4'
+            }
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
 
@@ -62,7 +49,7 @@ def index():
                 buffer,
                 as_attachment=True,
                 download_name=f"download.{extension}",
-                mimetype=f"audio/mpeg" if extension == 'mp3' else f"video/mp4"
+                mimetype="video/mp4"
             )
 
         except Exception as e:
